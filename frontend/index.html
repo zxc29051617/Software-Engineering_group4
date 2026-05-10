@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bubble Sort Visualizer</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="screen" aria-live="polite">
+      <header class="screen-header">
+        <span id="screenNumber">SCREEN 1</span>
+        <span id="screenStatus">START</span>
+      </header>
+
+      <div class="content-grid">
+        <aside class="brand-panel">
+          <div id="brandTitle" class="brand-title">
+            <span>BUBBLE</span>
+            <span>SORT</span>
+            <span>VISUALIZER</span>
+          </div>
+
+          <button id="primaryAction" class="primary-button red-button" type="button">
+            CONFIRM
+          </button>
+        </aside>
+
+        <section class="work-panel">
+          <form id="countForm" class="count-form">
+            <label for="countInput">HOW MANY NUMBERS TO SORT (2-10)?</label>
+            <input id="countInput" class="count-input" type="number" min="2" max="10" inputmode="numeric" autocomplete="off">
+          </form>
+
+          <form id="valuesForm" class="values-form hidden">
+            <div id="valueInputs" class="value-inputs"></div>
+          </form>
+
+          <div id="barArea" class="bar-area hidden" aria-label="Sorting bars"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="errorOverlay" class="error-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="errorTitle">
+    <section class="error-modal">
+      <button id="closeError" class="close-button" type="button" aria-label="Close validation error">x</button>
+      <h2 id="errorTitle">VALIDATION ERROR</h2>
+      <p id="errorMessage">Please enter valid numbers.</p>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
