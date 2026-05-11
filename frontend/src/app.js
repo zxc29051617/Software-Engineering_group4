@@ -162,7 +162,7 @@ function showError(message) {
 
 function closeErrorModal() {
   errorOverlay.classList.add("hidden");
-  updateInputState();
+  resetApp();
 }
 
 function renderBars(numbers, options = {}) {
