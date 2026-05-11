@@ -1,0 +1,9 @@
+{
+  "name": "bubble-sort-visualizer",
+  "version": "1.0.0",
+  "description": "Frontend for the Bubble Sort Visualizer project.",
+  "private": true,
+  "scripts": {
+    "check": "node --check src/app.js"
+  }
+}

@@ -1,4 +1,4 @@
-# Software-Engineering_group4
+﻿# Software-Engineering_group4
 
 Bubble Sort Visualizer for a software engineering group project.
 
@@ -6,10 +6,19 @@ Bubble Sort Visualizer for a software engineering group project.
 
 ```text
 Software Engineering_4/
-├─ frontend/   # Web UI files
-├─ backend/    # Bubble sort logic
-├─ ui-design/  # UI mockup images
-└─ docs/       # Project documents
++-- frontend/      # 前端畫面與互動
+|   +-- index.html
+|   +-- src/
+|   |   +-- app.js
+|   |   +-- style.css
+|   |   +-- components/
+|   |   `-- assets/
+|   `-- package.json
++-- backend/       # 排序邏輯或 API
++-- ui-design/     # UI 設計圖、截圖、mockup
++-- docs/          # 需求、流程圖、使用案例、設計說明
++-- test/          # 測試程式
+`-- README.md      # 專案說明與如何執行
 ```
 
 ## How to Run
@@ -17,7 +26,16 @@ Software Engineering_4/
 Open the frontend page in a browser:
 
 ```text
-frontend/index.html
+cd frontend
+start index.html
+
+```
+
+Check frontend JavaScript syntax:
+
+```powershell
+cd frontend
+npm run check
 ```
 
 ## Current Features
