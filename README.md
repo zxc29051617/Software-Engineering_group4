@@ -23,12 +23,19 @@ Software Engineering_4/
 
 ## How to Run
 
+### Online Demo
+
+GitHub Pages:
+
+https://zxc29051617.github.io/Software-Engineering_group4/
+
+### Run Locally
+
 Open the frontend page in a browser:
 
-```text
+```bash
 cd frontend
 start index.html
-
 ```
 
 Check frontend JavaScript syntax:
