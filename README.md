@@ -6,8 +6,8 @@ Bubble Sort Visualizer for a software engineering group project.
 
 ```text
 Software Engineering_4/
++-- index.html     # GitHub Pages /root 會讀取的網站入口
 +-- frontend/      # 前端畫面與互動
-|   +-- index.html
 |   +-- src/
 |   |   +-- app.js
 |   |   +-- style.css
@@ -23,19 +23,17 @@ Software Engineering_4/
 
 ## How to Run
 
-### Online Demo
-
-GitHub Pages:
-
-https://zxc29051617.github.io/Software-Engineering_group4/
-
-### Run Locally
-
 Open the frontend page in a browser:
 
-```bash
-cd frontend
+```powershell
 start index.html
+```
+
+GitHub Pages setting:
+
+```text
+Branch: main
+Folder: /root
 ```
 
 Check frontend JavaScript syntax:
