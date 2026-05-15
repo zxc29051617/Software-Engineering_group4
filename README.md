@@ -6,7 +6,7 @@ Bubble Sort Visualizer for a software engineering group project.
 
 ```text
 Software Engineering_4/
-+-- index.html     # GitHub Pages /root 會讀取的網站入口
++-- index.html     # GitHub Pages /root 讀取的網站入口
 +-- frontend/      # 前端畫面與互動
 |   +-- src/
 |   |   +-- app.js
