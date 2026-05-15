@@ -21,13 +21,13 @@ const state = {
 };
 
 const screenMeta = {
-  start: ["SCREEN 1", "START"],
-  input: ["SCREEN 2", "INPUT BOXES GENERATED"],
-  ready: ["SCREEN 3", "VALUES ENTERED - READY TO VALIDATE"],
-  error: ["SCREEN 4", "VALIDATION ERROR"],
-  readyToSort: ["SCREEN 5", "SUCCESSFUL VALIDATION - READY TO SORT"],
-  sorting: ["SCREEN 6", "BUBBLE SORT IN PROGRESS"],
-  finished: ["SCREEN 7", "SORTING SUCCESSFUL - RESET"],
+  start: ["STATUS", "START"],
+  input: ["STATUS", "INPUT"],
+  ready: ["STATUS", "INPUT"],
+  error: ["STATUS", "VALIDATION ERROR"],
+  readyToSort: ["STATUS", "READY TO SORT"],
+  sorting: ["STATUS", "SORTING"],
+  finished: ["STATUS", "FINISHED"],
 };
 
 class BubbleSortVisualizer {
