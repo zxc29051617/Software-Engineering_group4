@@ -89,7 +89,7 @@ button:disabled {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 24px;
+  gap: 22px;
   padding: 32px 54px;
   border-right: 1px solid var(--line);
 }
@@ -97,9 +97,18 @@ button:disabled {
 .brand-title {
   display: grid;
   gap: 4px;
-  font-size: 2.35rem;
+  font-size: 2.15rem;
   line-height: 1.08;
   font-weight: 300;
+}
+
+.range-hint {
+  margin: 0;
+  color: #9b9ab5;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .success-title {
@@ -322,7 +331,7 @@ button:disabled {
   }
 
   .brand-title {
-    font-size: 1.95rem;
+    font-size: 1.75rem;
   }
 
   .work-panel {
