@@ -1,52 +1,33 @@
-﻿# Software-Engineering_group4
+﻿# Software Engineering Group 4：Bubble Sort Visualizer
 
-Bubble Sort Visualizer for a software engineering group project.
+軟體工程課程第 4 組的專題：在網頁上一步步呈現 Bubble Sort 的排序過程。
 
-## Project Structure
+網站：https://zxc29051617.github.io/Software-Engineering_group4/
 
-```text
-Software Engineering_4/
-+-- index.html     # GitHub Pages /root 讀取的網站入口
-+-- frontend/      # 前端畫面與互動
-|   +-- src/
-|   |   +-- app.js
-|   |   +-- style.css
-|   |   +-- components/
-|   |   `-- assets/
-|   `-- package.json
-+-- backend/       # 排序邏輯或 API
-+-- ui-design/     # UI 設計圖、截圖、mockup
-+-- docs/          # 需求、流程圖、使用案例、設計說明
-+-- test/          # 測試程式
-`-- README.md      # 專案說明與如何執行
-```
+## 功能
 
-## How to Run
+- 輸入要排序的數字個數（2 到 10 個），動態產生輸入框並檢查每個輸入值
+- 一步步顯示 Bubble Sort 的比較與交換
+- 顯示排序結果，可以重新開始
 
-Open the frontend page in a browser:
-
-```powershell
-start index.html
-```
-
-GitHub Pages setting:
+## 專案結構
 
 ```text
-Branch: main
-Folder: /root
+.
+├── README.md
+├── index.html        # 網頁入口
+├── frontend/         # 前端畫面與互動：src/app.js、src/style.css
+├── backend/          # 排序與輸入檢查：bubblesort.js
+└── ui-design/        # UI 設計草圖
 ```
 
-Check frontend JavaScript syntax:
+## 執行方式
 
-```powershell
+直接用瀏覽器打開 `index.html`。網站以 GitHub Pages 發布（`main` 分支根目錄）。
+
+檢查前端 JavaScript 語法：
+
+```bash
 cd frontend
 npm run check
 ```
-
-## Current Features
-
-- Enter the number of values to sort, from 2 to 10.
-- Generate input boxes dynamically.
-- Validate each input value.
-- Visualize Bubble Sort step by step.
-- Show the sorted result and reset option.
