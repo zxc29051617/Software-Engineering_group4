@@ -1,4 +1,4 @@
-﻿# Software Engineering Group 4：Bubble Sort Visualizer
+# Software Engineering Group 4：Bubble Sort Visualizer
 
 軟體工程課程第 4 組的專題：在網頁上一步步呈現 Bubble Sort 的排序過程。
 
