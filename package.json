@@ -1,0 +1,15 @@
+{
+  "name": "bubble-sort-visualizer",
+  "version": "2.0.0",
+  "description": "Interactive sorting algorithm visualizer (Software Engineering, Group 4)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
