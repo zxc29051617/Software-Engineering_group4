@@ -1,324 +1,274 @@
-const screenNumber = document.getElementById("screenNumber");
-const screenStatus = document.getElementById("screenStatus");
-const brandTitle = document.getElementById("brandTitle");
-const primaryAction = document.getElementById("primaryAction");
-const countForm = document.getElementById("countForm");
-const countInput = document.getElementById("countInput");
-const valuesForm = document.getElementById("valuesForm");
-const valueInputs = document.getElementById("valueInputs");
-const barArea = document.getElementById("barArea");
-const errorOverlay = document.getElementById("errorOverlay");
-const errorMessage = document.getElementById("errorMessage");
-const closeError = document.getElementById("closeError");
+/**
+ * Entry point: reads preferences and the share link, creates both modes and
+ * the shared data panel, and wires the header, keyboard and help dialog.
+ * @module app
+ */
 
-const state = {
-  screen: "start",
-  count: 0,
-  numbers: [],
-  sorter: null,
-  timerId: null,
-  lastStep: null,
+import { algorithmIds, DEFAULT_ALGORITHM_ID } from '../../backend/algorithms/index.js';
+import { generatePreset, PRESETS, SIZE_LIMITS } from '../../backend/input/presets.js';
+import { newSeed } from '../../backend/input/random.js';
+import { createDataPanel } from './components/data-panel.js';
+import { createRaceMode, DEFAULT_RACE } from './controllers/race-mode.js';
+import { createSingleMode } from './controllers/single-mode.js';
+import { applyTranslations, createTranslator, normalizeLanguage } from './i18n/index.js';
+import { DEFAULT_SPEED_INDEX } from './services/scheduler.js';
+import { buildShareQuery, parseShareQuery } from './services/share-link.js';
+import { actionForKey } from './services/shortcuts.js';
+import { createSound } from './services/sound.js';
+import { loadPrefs, savePrefs } from './services/storage.js';
+import { applyTheme, currentTheme, toggleTheme } from './services/theme.js';
+
+const RACE_DEFAULT_SPEED_INDEX = 8;
+
+const $ = (selector) => document.querySelector(selector);
+
+const prefs = loadPrefs();
+const shared = parseShareQuery(location.search, { algorithmIds: algorithmIds(), presets: PRESETS, sizeLimits: SIZE_LIMITS });
+
+let lang = normalizeLanguage(prefs.lang);
+let t = createTranslator(lang);
+const getT = () => t;
+const sound = createSound();
+
+/** The data both modes sort: a preset (with seed) or custom values. */
+const data = {
+  preset: shared.preset ?? (PRESETS.includes(prefs.preset) ? prefs.preset : 'random'),
+  size: shared.size ?? clampSize(prefs.size ?? SIZE_LIMITS.default),
+  seed: shared.seed ?? newSeed(),
+  custom: shared.values ?? null,
 };
 
-const screenMeta = {
-  start: ["STATUS", "START"],
-  input: ["STATUS", "INPUT"],
-  ready: ["STATUS", "INPUT"],
-  error: ["STATUS", "VALIDATION ERROR"],
-  readyToSort: ["STATUS", "READY TO SORT"],
-  sorting: ["STATUS", "SORTING"],
-  finished: ["STATUS", "FINISHED"],
-};
+/** @param {number} size */
+function clampSize(size) {
+  const value = Math.round(Number(size));
+  if (!Number.isFinite(value)) return SIZE_LIMITS.default;
+  return Math.min(Math.max(value, SIZE_LIMITS.min), SIZE_LIMITS.max);
+}
 
-class BubbleSortVisualizer {
-  constructor(inputArray) {
-    this.arr = [...inputArray];
-    this.i = 0;
-    this.j = 0;
-    this.finished = inputArray.length <= 1;
+function currentValues() {
+  return data.custom ?? generatePreset(data.preset, data.size, data.seed);
+}
+
+// ----- modes -----------------------------------------------------------------------
+
+const single = createSingleMode({
+  elements: {
+    picker: $('#algo-picker'),
+    title: $('#stage-title'),
+    narration: $('#narration'),
+    chart: $('#chart'),
+    predict: $('#predict'),
+    predictToggle: $('#predict-toggle'),
+    predictHint: $('#predict-hint'),
+    controls: $('#single-controls'),
+    code: $('#code'),
+    stats: $('#stats'),
+    info: $('#info'),
+  },
+  sound,
+  getT,
+  speedIndex: prefs.speedSingle ?? DEFAULT_SPEED_INDEX,
+  onSettingsChange: savePrefs,
+});
+
+const race = createRaceMode({
+  elements: {
+    picker: $('#race-picker'),
+    error: $('#race-error'),
+    controls: $('#race-controls'),
+    clock: $('#race-clock'),
+    lanes: $('#lanes'),
+    summary: $('#race-summary'),
+  },
+  getT,
+  speedIndex: prefs.speedRace ?? RACE_DEFAULT_SPEED_INDEX,
+  algorithms: shared.algorithms ?? prefs.raceAlgorithms ?? [...DEFAULT_RACE],
+  onSettingsChange: savePrefs,
+});
+
+let mode = shared.mode ?? (prefs.mode === 'race' ? 'race' : 'single');
+
+/** @param {'single'|'race'} next */
+function setMode(next) {
+  mode = next;
+  $('#main').dataset.mode = mode;
+  for (const view of document.querySelectorAll('[data-view]')) view.hidden = view.dataset.view !== mode;
+  for (const button of document.querySelectorAll('[data-mode-button]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.modeButton === mode));
   }
-
-  nextStep() {
-    if (this.finished) {
-      return {
-        done: true,
-        array: [...this.arr],
-        currentCompare: [],
-        swapped: false,
-      };
-    }
-
-    const left = this.j;
-    const right = this.j + 1;
-    let swapped = false;
-
-    if (this.arr[left] > this.arr[right]) {
-      [this.arr[left], this.arr[right]] = [this.arr[right], this.arr[left]];
-      swapped = true;
-    }
-
-    this.j += 1;
-
-    if (this.j >= this.arr.length - this.i - 1) {
-      this.j = 0;
-      this.i += 1;
-    }
-
-    if (this.i >= this.arr.length - 1) {
-      this.finished = true;
-    }
-
-    return {
-      done: this.finished,
-      array: [...this.arr],
-      currentCompare: [left, right],
-      swapped,
-    };
-  }
-}
-
-function isIntegerInRange(value, min, max) {
-  const number = Number(value);
-  return Number.isInteger(number) && number >= min && number <= max;
-}
-
-function setScreen(screen) {
-  state.screen = screen;
-  const [number, status] = screenMeta[screen];
-  screenNumber.textContent = number;
-  screenStatus.textContent = status;
-}
-
-function setPrimaryAction(label, className, disabled = false) {
-  primaryAction.textContent = label;
-  primaryAction.className = `primary-button ${className}`;
-  primaryAction.disabled = disabled;
-}
-
-function showOnly(panelName) {
-  countForm.classList.toggle("hidden", panelName !== "count");
-  valuesForm.classList.toggle("hidden", panelName !== "values");
-  barArea.classList.toggle("hidden", panelName !== "bars");
-}
-
-function resetBrand() {
-  brandTitle.classList.remove("success-title");
-  brandTitle.innerHTML = "<span>BUBBLE</span><span>SORT</span><span>VISUALIZER</span>";
-}
-
-function createInputs(count) {
-  valueInputs.innerHTML = "";
-  valueInputs.style.setProperty("--input-count", count);
-  valueInputs.style.setProperty("--mobile-count", Math.min(count, 5));
-
-  for (let index = 0; index < count; index += 1) {
-    const input = document.createElement("input");
-    input.className = "number-input";
-    input.type = "number";
-    input.min = "1";
-    input.max = "10";
-    input.inputMode = "numeric";
-    input.autocomplete = "off";
-    input.placeholder = "0";
-    input.setAttribute("aria-label", `Number ${index + 1}`);
-    valueInputs.appendChild(input);
-  }
-}
-
-function getNumberInputs() {
-  return [...valueInputs.querySelectorAll(".number-input")];
-}
-
-function updateInputState() {
-  const inputs = getNumberInputs();
-  let allFilled = true;
-  let allValid = true;
-
-  inputs.forEach((input) => {
-    const hasValue = input.value.trim() !== "";
-    const valid = hasValue && isIntegerInRange(input.value, 1, 10);
-    allFilled = allFilled && hasValue;
-    allValid = allValid && valid;
-    input.classList.toggle("valid", valid);
-    input.classList.toggle("invalid", hasValue && !valid);
-  });
-
-  if (allFilled) {
-    setScreen("ready");
-    setPrimaryAction("VALIDATE", "green-button", false);
+  if (mode === 'race') {
+    single.suspend();
+    race.show();
   } else {
-    setScreen("input");
-    setPrimaryAction("VALIDATE", "green-button", true);
+    race.hide();
   }
-
-  return allFilled && allValid;
+  savePrefs({ mode });
 }
 
-function showError(message) {
-  setScreen("error");
-  errorMessage.textContent = message;
-  errorOverlay.classList.remove("hidden");
-}
+// ----- data panel ------------------------------------------------------------------------
 
-function closeErrorModal() {
-  errorOverlay.classList.add("hidden");
-  resetApp();
-}
+let pendingData = 0;
 
-function renderBars(numbers, options = {}) {
-  const compare = options.compare || [];
-  const swapped = options.swapped || false;
-  const sorted = options.sorted || false;
-  const maxValue = Math.max(...numbers, 10);
-
-  barArea.innerHTML = "";
-  barArea.style.setProperty("--bar-count", numbers.length);
-  barArea.style.setProperty("--mobile-count", Math.min(numbers.length, 5));
-
-  numbers.forEach((number, index) => {
-    const bar = document.createElement("div");
-    const height = 34 + (number / maxValue) * 148;
-    bar.className = "bar";
-    bar.style.height = `${height}px`;
-    bar.textContent = number;
-
-    if (sorted) {
-      bar.classList.add("sorted");
-    } else if (compare.includes(index)) {
-      bar.classList.add("compare");
-      if (swapped) {
-        bar.classList.add("swapped");
-      }
-    }
-
-    barArea.appendChild(bar);
+/** Rebuilds both modes with the current data (coalesced to one per frame). */
+function applyData() {
+  cancelAnimationFrame(pendingData);
+  pendingData = requestAnimationFrame(() => {
+    const values = currentValues();
+    single.setData(values);
+    race.setData(values);
+    dataPanel.update({ size: data.size, preset: data.preset, values, custom: data.custom !== null }, t);
   });
 }
 
-function confirmCount() {
-  if (!isIntegerInRange(countInput.value, 2, 10)) {
-    showError("Input Error: Please enter a number from 2 to 10.");
-    return;
-  }
-
-  state.count = Number(countInput.value);
-  resetBrand();
-  createInputs(state.count);
-  showOnly("values");
-  setScreen("input");
-  setPrimaryAction("VALIDATE", "green-button", true);
-}
-
-function validateNumbers() {
-  const inputs = getNumberInputs();
-  const invalidInput = inputs.find((input) => !isIntegerInRange(input.value, 1, 10));
-
-  if (invalidInput) {
-    invalidInput.classList.add("invalid");
-    showError(`Input Error: "${invalidInput.value || "blank"}" is not a valid number from 1 to 10.`);
-    return;
-  }
-
-  state.numbers = inputs.map((input) => Number(input.value));
-  showOnly("bars");
-  setScreen("readyToSort");
-  setPrimaryAction("SORT", "red-button", false);
-  renderBars(state.numbers);
-}
-
-function startSort() {
-  clearInterval(state.timerId);
-  state.sorter = new BubbleSortVisualizer(state.numbers);
-  state.lastStep = null;
-  setScreen("sorting");
-  setPrimaryAction("SORTING...", "red-button", true);
-
-  state.timerId = setInterval(() => {
-    const step = state.sorter.nextStep();
-    state.lastStep = step;
-    renderBars(step.array, {
-      compare: step.currentCompare,
-      swapped: step.swapped,
-      sorted: false,
-    });
-
-    if (step.done) {
-      clearInterval(state.timerId);
-      state.numbers = step.array;
-      finishSort();
-    }
-  }, 650);
-}
-
-function finishSort() {
-  setScreen("finished");
-  brandTitle.classList.add("success-title");
-  brandTitle.innerHTML = "<span>SORTING</span><span>SUCCESSFUL!</span>";
-  setPrimaryAction("PLAY AGAIN?", "green-button", false);
-  renderBars(state.numbers, { sorted: true });
-}
-
-function resetApp() {
-  clearInterval(state.timerId);
-  state.count = 0;
-  state.numbers = [];
-  state.sorter = null;
-  state.lastStep = null;
-  countInput.value = "";
-  valueInputs.innerHTML = "";
-  barArea.innerHTML = "";
-  resetBrand();
-  showOnly("count");
-  setScreen("start");
-  setPrimaryAction("CONFIRM", "red-button", false);
-  countInput.focus();
-}
-
-primaryAction.addEventListener("click", () => {
-  if (state.screen === "start") {
-    confirmCount();
-    return;
-  }
-
-  if (state.screen === "input" || state.screen === "ready") {
-    validateNumbers();
-    return;
-  }
-
-  if (state.screen === "readyToSort") {
-    startSort();
-    return;
-  }
-
-  if (state.screen === "finished") {
-    resetApp();
-  }
+const dataPanel = createDataPanel($('#data-card'), {
+  onSize(size) {
+    data.size = clampSize(size);
+    data.custom = null;
+    savePrefs({ size: data.size });
+    applyData();
+  },
+  onPreset(preset) {
+    data.preset = preset;
+    data.seed = newSeed();
+    data.custom = null;
+    savePrefs({ preset });
+    applyData();
+  },
+  onShuffle: shuffle,
+  onCustom(values) {
+    data.custom = values;
+    applyData();
+  },
+  onShare: share,
 });
 
-countForm.addEventListener("submit", (event) => {
+function shuffle() {
+  data.seed = newSeed();
+  data.custom = null;
+  applyData();
+}
+
+async function share() {
+  const query = buildShareQuery({
+    mode,
+    algorithm: single.algorithmId,
+    algorithms: race.selection,
+    preset: data.preset,
+    size: data.size,
+    seed: data.seed,
+    values: data.custom,
+  });
+  const url = `${location.origin}${location.pathname}${query}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    dataPanel.showShareMessage(t('input.shareDone'), true);
+  } catch {
+    history.replaceState(null, '', query);
+    dataPanel.showShareMessage(t('input.shareFailed'), false);
+  }
+}
+
+// ----- header: language, theme, sound, help ----------------------------------------
+
+function translatePage() {
+  document.documentElement.lang = lang;
+  document.title = t('app.documentTitle');
+  applyTranslations(document, t);
+  // The language button is labelled in the other language.
+  $('#language-toggle').lang = lang === 'en' ? 'zh-Hant' : 'en';
+  updateSoundButton();
+}
+
+function toggleLanguage() {
+  lang = lang === 'en' ? 'zh-Hant' : 'en';
+  t = createTranslator(lang);
+  savePrefs({ lang });
+  translatePage();
+  dataPanel.clearMessages();
+  dataPanel.update({ size: data.size, preset: data.preset, values: currentValues(), custom: data.custom !== null }, t);
+  single.retranslate();
+  race.retranslate();
+}
+
+function updateSoundButton() {
+  const button = $('#sound-toggle');
+  const label = t(sound.enabled ? 'header.soundOff' : 'header.soundOn');
+  button.setAttribute('aria-pressed', String(sound.enabled));
+  button.setAttribute('aria-label', label);
+  button.title = label;
+}
+
+function toggleSound() {
+  sound.setEnabled(!sound.enabled);
+  updateSoundButton();
+}
+
+function updateThemeButton() {
+  $('#theme-toggle').setAttribute('aria-pressed', String(currentTheme() === 'dark'));
+}
+
+const helpDialog = $('#help-dialog');
+
+function openHelp() {
+  if (typeof helpDialog.showModal === 'function') helpDialog.showModal();
+  else helpDialog.setAttribute('open', '');
+}
+
+$('#language-toggle').addEventListener('click', toggleLanguage);
+$('#theme-toggle').addEventListener('click', () => {
+  savePrefs({ theme: toggleTheme() });
+  updateThemeButton();
+});
+$('#sound-toggle').addEventListener('click', toggleSound);
+$('#help-open').addEventListener('click', openHelp);
+function closeHelp() {
+  if (typeof helpDialog.close === 'function') helpDialog.close();
+  else helpDialog.removeAttribute('open');
+}
+
+$('#help-close').addEventListener('click', closeHelp);
+helpDialog.addEventListener('click', (event) => {
+  if (event.target === helpDialog) closeHelp();
+});
+for (const button of document.querySelectorAll('[data-mode-button]')) {
+  button.addEventListener('click', () => setMode(button.dataset.modeButton));
+}
+
+// ----- keyboard ------------------------------------------------------------------------------
+
+document.addEventListener('keydown', (event) => {
+  if (helpDialog.open) return;
+  const action = actionForKey(event);
+  if (!action) return;
   event.preventDefault();
-  confirmCount();
-});
-
-valuesForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  validateNumbers();
-});
-
-valueInputs.addEventListener("input", updateInputState);
-
-closeError.addEventListener("click", closeErrorModal);
-
-errorOverlay.addEventListener("click", (event) => {
-  if (event.target === errorOverlay) {
-    closeErrorModal();
+  switch (action) {
+    case 'help':
+      openHelp();
+      break;
+    case 'mode':
+      setMode(mode === 'single' ? 'race' : 'single');
+      break;
+    case 'sound':
+      toggleSound();
+      break;
+    case 'shuffle':
+      shuffle();
+      break;
+    default:
+      (mode === 'race' ? race : single).handleAction(action);
   }
 });
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !errorOverlay.classList.contains("hidden")) {
-    closeErrorModal();
-  }
-});
+// ----- start -----------------------------------------------------------------------------------
 
-resetApp();
+applyTheme(prefs.theme);
+updateThemeButton();
+translatePage();
+single.init();
+race.init();
+single.setAlgorithm(shared.algorithm ?? (algorithmIds().includes(prefs.algorithm) ? prefs.algorithm : DEFAULT_ALGORITHM_ID));
+setMode(mode);
+applyData();
+requestAnimationFrame(() => {
+  document.documentElement.dataset.ready = 'true';
+});

@@ -1,57 +1,305 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bubble Sort Visualizer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bubble Sort Visualizer｜排序演算法視覺化</title>
+  <meta name="description" content="互動式排序演算法視覺化：氣泡、雞尾酒、選擇、插入、希爾、合併、快速、堆積、計數與基數排序，可逐步播放、倒退、對照虛擬碼並比較效能。">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="frontend/src/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="frontend/src/style.css">
+  <script>
+    // Apply the saved theme and language before the first paint.
+    (function () {
+      try {
+        var prefs = JSON.parse(localStorage.getItem('bubble-sort-visualizer:v2') || '{}');
+        if (prefs.theme === 'light' || prefs.theme === 'dark') document.documentElement.dataset.theme = prefs.theme;
+        if (prefs.lang === 'en') document.documentElement.lang = 'en';
+      } catch (error) { /* storage unavailable */ }
+    })();
+  </script>
+  <script type="module" src="frontend/src/app.js"></script>
 </head>
 <body>
-  <main class="app-shell">
-    <section class="screen" aria-live="polite">
-      <header class="screen-header">
-        <span id="screenNumber">STATUS</span>
-        <span id="screenStatus">START</span>
-      </header>
-
-      <div class="content-grid">
-        <aside class="brand-panel">
-          <div id="brandTitle" class="brand-title">
-            <span>BUBBLE</span>
-            <span>SORT</span>
-            <span>VISUALIZER</span>
-          </div>
-
-          <button id="primaryAction" class="primary-button red-button" type="button">
-            CONFIRM
-          </button>
-        </aside>
-
-        <section class="work-panel">
-          <form id="countForm" class="count-form">
-            <label for="countInput">HOW MANY NUMBERS TO SORT (2-10)?</label>
-            <input id="countInput" class="count-input" type="number" min="2" max="10" inputmode="numeric" autocomplete="off">
-          </form>
-
-          <form id="valuesForm" class="values-form hidden">
-            <p class="range-hint">Allowed range: integers 1 - 10</p>
-            <div id="valueInputs" class="value-inputs"></div>
-          </form>
-
-          <div id="barArea" class="bar-area hidden" aria-label="Sorting bars"></div>
-        </section>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="3" y="17" width="5" height="12" rx="1.5" class="mark-base"/>
+        <rect x="10" y="11" width="5" height="18" rx="1.5" class="mark-compare"/>
+        <rect x="17" y="7" width="5" height="22" rx="1.5" class="mark-compare"/>
+        <rect x="24" y="3" width="5" height="26" rx="1.5" class="mark-sorted"/>
+      </svg>
+      <div class="brand-text">
+        <h1 class="brand-name" data-i18n="app.name">Bubble Sort Visualizer</h1>
+        <p class="brand-tagline" data-i18n="app.tagline">從氣泡排序開始，一步步看懂十種排序演算法</p>
       </div>
-    </section>
+    </div>
+    <nav class="topbar-actions">
+      <div class="segmented" role="group" data-i18n-attr="aria-label:mode.label" aria-label="模式">
+        <button type="button" class="segment" data-mode-button="single" aria-pressed="true" data-i18n="mode.single">單一演算法</button>
+        <button type="button" class="segment" data-mode-button="race" aria-pressed="false" data-i18n="mode.race">比較模式</button>
+      </div>
+      <div class="icon-group">
+        <button type="button" class="icon-button text-button" id="language-toggle" lang="en" data-i18n-attr="aria-label:header.language; title:header.language" aria-label="Switch to English" title="Switch to English">
+          <span data-i18n="header.languageShort">EN</span>
+        </button>
+        <button type="button" class="icon-button" id="theme-toggle" data-i18n-attr="aria-label:header.theme; title:header.theme" aria-label="切換深色／淺色主題" title="切換深色／淺色主題">
+          <svg class="icon icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5a8.5 8.5 0 1 0 11.1 11.1z"/></svg>
+          <svg class="icon icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 1.8v3M12 19.2v3M1.8 12h3M19.2 12h3M4.8 4.8l2.1 2.1M17.1 17.1l2.1 2.1M4.8 19.2l2.1-2.1M17.1 6.9l2.1-2.1" class="stroke"/></svg>
+        </button>
+        <button type="button" class="icon-button" id="sound-toggle" aria-pressed="false" aria-label="開啟音效 (M)" title="開啟音效 (M)">
+          <svg class="icon icon-sound-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" class="stroke"/></svg>
+          <svg class="icon icon-sound-off" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" class="stroke"/></svg>
+        </button>
+        <button type="button" class="icon-button" id="help-open" data-i18n-attr="aria-label:header.help; title:header.help" aria-label="說明與快捷鍵 (?)" title="說明與快捷鍵 (?)">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2" class="stroke"/><path d="M9.4 9.3a2.7 2.7 0 1 1 3.8 2.5c-.8.4-1.2.9-1.2 1.8v.6" class="stroke"/><circle cx="12" cy="17.4" r="1.25"/></svg>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <main class="layout" id="main" data-mode="single">
+    <div class="workspace">
+      <section class="card stage-card" id="stage" data-view="single" aria-labelledby="stage-title">
+        <div class="chips algo-picker" id="algo-picker" role="group" data-i18n-attr="aria-label:picker.label" aria-label="選擇演算法"></div>
+        <div class="stage-head">
+          <h2 class="stage-title" id="stage-title">氣泡排序</h2>
+          <p class="narration" id="narration" aria-live="polite"></p>
+        </div>
+
+        <div class="chart" id="chart" role="img" aria-label="排序動畫"></div>
+
+        <div class="predict" id="predict" hidden>
+          <p class="predict-question" data-role="question"></p>
+          <div class="predict-actions">
+            <button type="button" class="button" data-answer="swap" data-i18n="predict.yes">會交換</button>
+            <button type="button" class="button" data-answer="keep" data-i18n="predict.no">不會</button>
+            <button type="button" class="button button-primary" data-role="continue" data-i18n="predict.continue" hidden>繼續</button>
+          </div>
+          <p class="predict-feedback" data-role="feedback" aria-live="polite"></p>
+          <p class="predict-score" data-role="score"></p>
+        </div>
+
+        <div class="controls" id="single-controls" role="group" data-i18n-attr="aria-label:controls.label" aria-label="播放控制">
+          <div class="transport">
+            <button type="button" class="icon-button" data-action="reset" data-i18n-attr="aria-label:controls.reset; title:controls.reset" aria-label="回到開頭 (Home)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h2.2v14H4zM13 6v12L6.6 12zM20 6v12l-6.4-6z"/></svg>
+            </button>
+            <button type="button" class="icon-button" data-action="back" data-i18n-attr="aria-label:controls.back; title:controls.back" aria-label="上一步 (←)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 6v12L7 12zM17 6h2.2v12H17z"/></svg>
+            </button>
+            <button type="button" class="icon-button play-button" data-action="toggle" aria-pressed="false" aria-label="播放 (空白鍵)">
+              <svg class="icon icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+              <svg class="icon icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5h3.6v13H7zM13.4 5.5H17v13h-3.6z"/></svg>
+            </button>
+            <button type="button" class="icon-button" data-action="forward" data-i18n-attr="aria-label:controls.forward; title:controls.forward" aria-label="下一步 (→)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.8 6H7v12H4.8zM8.5 6v12l8.5-6z"/></svg>
+            </button>
+            <button type="button" class="icon-button" data-action="end" data-i18n-attr="aria-label:controls.end; title:controls.end" aria-label="跳到結果 (End)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6v12l6.4-6zM11 6v12l6.4-6zM17.8 5H20v14h-2.2z"/></svg>
+            </button>
+          </div>
+          <div class="timeline">
+            <input type="range" data-role="timeline" min="0" max="0" value="0" data-i18n-attr="aria-label:controls.timeline" aria-label="時間軸">
+            <output class="position" data-role="position"></output>
+          </div>
+          <label class="speed">
+            <span data-i18n="controls.speed">速度</span>
+            <input type="range" data-role="speed" min="0" max="14" step="1" value="5">
+            <output data-role="speed-value"></output>
+          </label>
+        </div>
+
+        <div class="stage-foot">
+          <label class="switch">
+            <input type="checkbox" id="predict-toggle">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span data-i18n="controls.predict">預測模式 (P)</span>
+          </label>
+          <p class="hint" id="predict-hint"></p>
+        </div>
+
+        <ul class="legend" data-i18n-attr="aria-label:legend.title" aria-label="圖例">
+          <li><span class="swatch" data-state="default"></span><span data-i18n="legend.default">未排序</span></li>
+          <li><span class="swatch" data-state="compare"></span><span data-i18n="legend.compare">比較中</span></li>
+          <li><span class="swatch" data-state="swap"></span><span data-i18n="legend.swap">交換</span></li>
+          <li><span class="swatch" data-state="write"></span><span data-i18n="legend.write">寫入</span></li>
+          <li><span class="swatch" data-state="sorted"></span><span data-i18n="legend.sorted">已就定位</span></li>
+          <li><span class="swatch" data-state="pivot"></span><span data-i18n="legend.pivot">樞紐 pivot</span></li>
+          <li><span class="swatch swatch-tag">min</span><span data-i18n="legend.pointer">指標 min / i</span></li>
+          <li><span class="swatch is-dim" data-state="default"></span><span data-i18n="legend.dim">不在處理區間</span></li>
+        </ul>
+      </section>
+
+      <section class="card race-card" id="race" data-view="race" hidden aria-labelledby="race-title">
+        <h2 class="sr-only" id="race-title" data-i18n="mode.race">比較模式</h2>
+        <fieldset class="race-picker" id="race-picker">
+          <legend data-i18n="race.pick">選擇要比較的演算法（至少 2 個）</legend>
+        </fieldset>
+        <p class="message is-error" id="race-error" role="alert"></p>
+
+        <div class="controls" id="race-controls" role="group" data-i18n-attr="aria-label:controls.label" aria-label="播放控制">
+          <div class="transport">
+            <button type="button" class="icon-button" data-action="reset" data-i18n-attr="aria-label:controls.reset; title:controls.reset" aria-label="回到開頭 (Home)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h2.2v14H4zM13 6v12L6.6 12zM20 6v12l-6.4-6z"/></svg>
+            </button>
+            <button type="button" class="icon-button" data-action="back" data-i18n-attr="aria-label:controls.back; title:controls.back" aria-label="上一步 (←)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 6v12L7 12zM17 6h2.2v12H17z"/></svg>
+            </button>
+            <button type="button" class="icon-button play-button" data-action="toggle" aria-pressed="false" aria-label="播放 (空白鍵)">
+              <svg class="icon icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>
+              <svg class="icon icon-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5.5h3.6v13H7zM13.4 5.5H17v13h-3.6z"/></svg>
+            </button>
+            <button type="button" class="icon-button" data-action="forward" data-i18n-attr="aria-label:controls.forward; title:controls.forward" aria-label="下一步 (→)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.8 6H7v12H4.8zM8.5 6v12l8.5-6z"/></svg>
+            </button>
+            <button type="button" class="icon-button" data-action="end" data-i18n-attr="aria-label:controls.end; title:controls.end" aria-label="跳到結果 (End)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6v12l6.4-6zM11 6v12l6.4-6zM17.8 5H20v14h-2.2z"/></svg>
+            </button>
+          </div>
+          <div class="timeline">
+            <input type="range" data-role="timeline" min="0" max="0" value="0" data-i18n-attr="aria-label:controls.timeline" aria-label="時間軸">
+          </div>
+          <label class="speed">
+            <span data-i18n="controls.speed">速度</span>
+            <input type="range" data-role="speed" min="0" max="14" step="1" value="8">
+            <output data-role="speed-value"></output>
+          </label>
+        </div>
+
+        <p class="race-clock" id="race-clock" aria-live="off"></p>
+        <p class="hint" data-i18n="race.opsHint">每一次比較、交換或寫入算 1 次操作，所有演算法以相同的速度前進，先做完的獲勝。</p>
+        <div class="lanes" id="lanes"></div>
+
+        <section class="race-summary" id="race-summary" hidden aria-labelledby="race-summary-title">
+          <h3 id="race-summary-title" data-i18n="race.summary">結果</h3>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col" class="num" data-i18n="race.col.rank">名次</th>
+                  <th scope="col" data-i18n="race.col.algorithm">演算法</th>
+                  <th scope="col" class="num" data-i18n="race.col.comparisons">比較</th>
+                  <th scope="col" class="num" data-i18n="race.col.swaps">交換</th>
+                  <th scope="col" class="num" data-i18n="race.col.writes">寫入</th>
+                  <th scope="col" class="num" data-i18n="race.col.total">總操作</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+
+      <section class="card data-card" id="data-card" aria-labelledby="data-title">
+        <h2 id="data-title" data-i18n="input.title">資料</h2>
+        <div class="data-grid">
+          <div class="field">
+            <label class="field-label" for="size-input">
+              <span data-i18n="input.size">資料量</span>
+              <output id="size-value" for="size-input"></output>
+            </label>
+            <input type="range" id="size-input" min="5" max="100" step="1" value="20">
+          </div>
+          <div class="field">
+            <span class="field-label" id="preset-label" data-i18n="input.preset">初始排列</span>
+            <div class="chips" id="preset-buttons" role="group" aria-labelledby="preset-label"></div>
+          </div>
+          <div class="field field-actions">
+            <button type="button" class="button" id="shuffle-button" data-i18n="input.shuffle">重新產生 (N)</button>
+            <button type="button" class="button button-ghost" id="share-button" data-i18n="input.share">複製分享連結</button>
+            <p class="message" id="share-message" role="status"></p>
+          </div>
+          <form class="field custom-form" id="custom-form" novalidate>
+            <label class="field-label" for="custom-input" data-i18n="input.custom">自訂資料</label>
+            <div class="custom-row">
+              <input type="text" id="custom-input" autocomplete="off" spellcheck="false" data-i18n-attr="placeholder:input.customPlaceholder" placeholder="例如：5, 3, 8, 1, 9" aria-describedby="custom-hint custom-message">
+              <button type="submit" class="button button-primary" data-i18n="input.apply">套用</button>
+            </div>
+            <p class="hint" id="custom-hint" data-i18n="input.customHint">2–100 個 0–999 的整數，用逗號、頓號或空白分隔。</p>
+            <p class="message" id="custom-message" role="status"></p>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <aside class="sidebar" data-view="single">
+      <section class="card code-card" aria-labelledby="code-title">
+        <h2 id="code-title" data-i18n="panel.code">虛擬碼</h2>
+        <ol class="code" id="code"></ol>
+      </section>
+      <section class="card stats-card" id="stats" aria-labelledby="stats-title">
+        <h2 id="stats-title" data-i18n="panel.stats">統計</h2>
+        <dl class="stats-grid">
+          <div><dt data-i18n="stats.step">步驟</dt><dd data-stat="step">0 / 0</dd></div>
+          <div><dt data-i18n="stats.comparisons">比較</dt><dd data-stat="comparisons">0</dd></div>
+          <div><dt data-i18n="stats.swaps">交換</dt><dd data-stat="swaps">0</dd></div>
+          <div><dt data-i18n="stats.writes">寫入</dt><dd data-stat="writes">0</dd></div>
+          <div><dt data-i18n="stats.auxWrites">輔助陣列寫入</dt><dd data-stat="auxWrites">0</dd></div>
+          <div><dt data-i18n="stats.extraSpace">額外空間</dt><dd data-stat="extraSpace">0</dd></div>
+        </dl>
+        <div class="inversions">
+          <div class="inversions-head">
+            <span data-i18n="stats.inversions">剩餘逆序對</span>
+            <strong data-stat="inversions">0</strong>
+          </div>
+          <div class="meter"><span data-stat="progress-bar"></span></div>
+          <p class="hint" data-stat="progress"></p>
+          <p class="hint" data-i18n="stats.inversionsHint">逆序對：前面的數比後面的數大的配對。陣列排好時為 0。</p>
+        </div>
+      </section>
+      <section class="card info-card" aria-labelledby="info-title">
+        <h2 id="info-title" data-i18n="panel.info">演算法資訊</h2>
+        <div id="info"></div>
+      </section>
+    </aside>
   </main>
 
-  <div id="errorOverlay" class="error-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="errorTitle">
-    <section class="error-modal">
-      <button id="closeError" class="close-button" type="button" aria-label="Close validation error">x</button>
-      <h2 id="errorTitle">VALIDATION ERROR</h2>
-      <p id="errorMessage">Please enter valid numbers.</p>
-    </section>
-  </div>
+  <footer class="footer">
+    <span data-i18n="footer.credit">軟體工程 第 4 組</span>
+    <span aria-hidden="true">·</span>
+    <span>v2.0</span>
+    <span aria-hidden="true">·</span>
+    <a href="https://github.com/zxc29051617/Software-Engineering_group4" data-i18n="footer.source">原始碼</a>
+  </footer>
 
-  <script src="frontend/src/app.js"></script>
+  <dialog class="help" id="help-dialog" aria-labelledby="help-title">
+    <div class="help-body">
+      <h2 id="help-title" data-i18n="help.title">說明與快捷鍵</h2>
+      <p data-i18n="help.intro">選一個演算法後按「播放」，或用 ← → 一步一步看。</p>
+      <h3 data-i18n="help.keysTitle">鍵盤快捷鍵</h3>
+      <table class="keys">
+        <tbody>
+          <tr><th scope="row"><kbd>空白</kbd> / <kbd>Space</kbd></th><td data-i18n="help.key.space">播放／暫停</td></tr>
+          <tr><th scope="row"><kbd>←</kbd> <kbd>→</kbd></th><td data-i18n="help.key.arrows">上一步／下一步</td></tr>
+          <tr><th scope="row"><kbd>Home</kbd> <kbd>End</kbd></th><td data-i18n="help.key.homeEnd">回到開頭／跳到結果</td></tr>
+          <tr><th scope="row"><kbd>↑</kbd> <kbd>↓</kbd></th><td data-i18n="help.key.speed">加快／放慢</td></tr>
+          <tr><th scope="row"><kbd>[</kbd> <kbd>]</kbd></th><td data-i18n="help.key.algorithm">上一個／下一個演算法</td></tr>
+          <tr><th scope="row"><kbd>N</kbd></th><td data-i18n="help.key.shuffle">重新產生資料</td></tr>
+          <tr><th scope="row"><kbd>P</kbd></th><td data-i18n="help.key.predict">切換預測模式</td></tr>
+          <tr><th scope="row"><kbd>C</kbd></th><td data-i18n="help.key.mode">切換單一／比較模式</td></tr>
+          <tr><th scope="row"><kbd>M</kbd></th><td data-i18n="help.key.sound">音效開關</td></tr>
+          <tr><th scope="row"><kbd>?</kbd></th><td data-i18n="help.key.help">開啟這個說明</td></tr>
+        </tbody>
+      </table>
+      <form method="dialog" class="help-actions">
+        <button type="submit" class="button button-primary" id="help-close" data-i18n="help.close">關閉</button>
+      </form>
+    </div>
+  </dialog>
+
+  <div class="notice" id="startup-notice" hidden>
+    <p>這個網站使用 ES 模組，請透過 HTTP 開啟：在專案資料夾執行 <code>python3 -m http.server 8000</code>，再瀏覽 <code>http://localhost:8000/</code>，或使用線上版 <a href="https://zxc29051617.github.io/Software-Engineering_group4/">zxc29051617.github.io/Software-Engineering_group4</a>。</p>
+    <p lang="en">This site uses ES modules. Serve it over HTTP (for example <code>python3 -m http.server 8000</code>) or use the online version.</p>
+  </div>
+  <noscript>
+    <div class="notice"><p>請啟用 JavaScript 才能使用這個視覺化工具。 / Please enable JavaScript to use this visualizer.</p></div>
+  </noscript>
+  <script>
+    // If the modules could not load (for example when opened as file://), explain how to run the site.
+    window.setTimeout(function () {
+      if (!document.documentElement.dataset.ready) document.getElementById('startup-notice').hidden = false;
+    }, 2500);
+  </script>
 </body>
 </html>
