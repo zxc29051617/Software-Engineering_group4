@@ -72,4 +72,4 @@ npm run check     # 語法檢查、import 路徑與 index.html 引用檢查
 
 ## 作者
 
-原始版本（v1）由軟體工程第 4 組完成：[zxc29051617](https://github.com/zxc29051617)、[jhih-weiwei](https://github.com/jhih-weiwei)、[960815anna-cmd](https://github.com/960815anna-cmd)。v2 是建立在 v1 設計與程式上的延伸版本。
+原始版本（v1）由軟體工程第 4 組完成：[zxc29051617](https://github.com/zxc29051617)、[jhih-weiwei](https://github.com/jhih-weiwei)、[960815anna-cmd](https://github.com/960815anna-cmd)。v2 是建立在 v1 設計與程式上的延伸版本；v1 繳交時的程式保留在 tag [`course-submission`](https://github.com/zxc29051617/Software-Engineering_group4/tree/course-submission)。
